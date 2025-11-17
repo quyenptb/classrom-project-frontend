@@ -1,5 +1,5 @@
 // --- lop-hoc-frontend/src/App.jsx ---
-// (PHIÊN BẢN MỚI 3.9) - Fix MẤT CHAT + Fix MẤT AUDIO (Lần cuối!)
+// (PHIÊN BẢN MỚI 3.8) - Fix GIẬT PDF + Fix MẤT AUDIO
 // PHIÊN BẢN ĐẦY ĐỦ 100%
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -355,11 +355,8 @@ export default function App() {
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false); 
   const [currentQuiz, setCurrentQuiz] = useState(null);
   const [currentYouTubeId, setCurrentYouTubeId] = useState(null);
-  const [isHandRaised, setIsHandRaised] = useState(false);
   
-  // --- (FIX 1/4) LIFT STATE CHAT LÊN ĐÂY ---
-  const [messages, setMessages] = useState([]);
-
+  const [isHandRaised, setIsHandRaised] = useState(false);
 
   const isPdfJsLoaded = useScript(PDFJS_SCRIPT_URL);
   
@@ -386,11 +383,6 @@ export default function App() {
       setCurrentQuiz(state.currentQuiz);
       setCurrentYouTubeId(state.currentYouTubeId);
       setIsHandRaised(state.isHandRaised);
-    });
-    
-    // --- (FIX 2/4) CHUYỂN LISTENER CHAT LÊN ĐÂY ---
-    newSocket.on('chat message', (msg) => {
-      setMessages((prevMessages) => [...prevMessages, msg]);
     });
     
     newSocket.on('view changed', (view) => { setCurrentView(view); });
@@ -420,9 +412,6 @@ export default function App() {
     });
 
     return () => {
-      // --- (FIX 3/4) THÊM DỌN DẸP CHAT ---
-      newSocket.off('chat message');
-      
       newSocket.off('classroom state');
       newSocket.off('view changed');
       newSocket.off('pdf updated');
@@ -434,7 +423,7 @@ export default function App() {
       newSocket.off('hand raised status');
       newSocket.close();
     };
-  }, []); // Dependency array rỗng là OK
+  }, []);
 
   // Giao diện chọn vai trò
   if (!role) {
@@ -530,8 +519,7 @@ export default function App() {
               setIsSidebarExpanded={setIsSidebarExpanded}
             />
             
-            {/* --- (FIX 4/4) TRUYỀN MESSAGES XUỐNG --- */}
-            {sidebarTab === 'chat' && ( <ChatBox socket={socket} role={role} messages={messages} /> )}
+            {sidebarTab === 'chat' && ( <ChatBox socket={socket} role={role} /> )}
             
             {sidebarTab === 'audio' && (
               role === 'teacher' ? ( <AudioStreamer socket={socket} /> ) : ( <AudioPlayer socket={socket} /> )
@@ -1238,13 +1226,6 @@ function AudioPlayer({ socket }) {
               processQueue(); 
             });
             sourceBufferRef.current = sourceBuffer;
-            
-            // --- (FIX AUDIO 2/3) CHUYỂN PLAY VÀO ĐÂY ---
-            // Chỉ play sau khi buffer đã sẵn sàng
-            audioRef.current.play().catch(e => {
-              console.log("Trình duyệt chặn tự động play", e);
-            });
-            
             processQueue(); 
          } catch (e) {
             console.error("Lỗi addSourceBuffer:", e);
@@ -1272,10 +1253,9 @@ function AudioPlayer({ socket }) {
           console.error("Lỗi xóa buffer:", e);
         }
       }
-      // --- (FIX AUDIO 3/3) XÓA PLAY Ở ĐÂY ---
-      // audioRef.current.play().catch(e => {
-      //   console.log("Trình duyệt chặn tự động play", e);
-      // });
+      audioRef.current.play().catch(e => {
+        console.log("Trình duyệt chặn tự động play", e);
+      });
     };
     
     const handleStopStream = () => {
@@ -1283,7 +1263,7 @@ function AudioPlayer({ socket }) {
       processQueue(); 
     };
     
-    // --- (FIX AUDIO 1/3) ---
+    // --- (FIX AUDIO LẦN CUỐI) ---
     // Sửa lại hàm này thành async và xử lý Blob/ArrayBuffer
     const handleAudioChunk = async (chunk) => {
       let buffer;
@@ -1321,13 +1301,21 @@ function AudioPlayer({ socket }) {
   );
 }
 
-// --- Component Chat (FIX MẤT CHAT) ---
-function ChatBox({ socket, role, messages }) { // <<< (FIX 1/3) Nhận 'messages' từ props
-  // const [messages, setMessages] = useState([]); // <<< (FIX 2/3) XÓA STATE NỘI BỘ
+// --- Component Chat ---
+function ChatBox({ socket, role }) {
+  const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const chatEndRef = useRef(null);
   
-  // <<< (FIX 3/3) XÓA useEffect socket.on('chat message')
+  useEffect(() => {
+    if (!socket) return;
+    socket.on('chat message', (msg) => {
+      setMessages((prevMessages) => [...prevMessages, msg]);
+    });
+    return () => {
+      socket.off('chat message');
+    };
+  }, [socket]);
   
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -1351,7 +1339,7 @@ function ChatBox({ socket, role, messages }) { // <<< (FIX 1/3) Nhận 'messages
     <div className="chat-box-container">
       <h3 className="chat-box-title">Chat</h3>
       <div className="chat-messages">
-        {messages.map((msg) => ( // Dùng 'messages' từ props
+        {messages.map((msg) => (
           <div 
             key={msg.id} 
             className={`message-wrapper ${ 
@@ -1378,7 +1366,7 @@ function ChatBox({ socket, role, messages }) { // <<< (FIX 1/3) Nhận 'messages
         <input 
           type="text" 
           value={newMessage} 
-          onChange={(e) => setNewMessage(e.target.value)} 
+          onChange={(e) => setNewMessage(e.target.value)} // <<< (FIX 2) SỬA LỖI INPUT
           placeholder="Gõ tin nhắn..." 
           className="chat-input" 
         />
