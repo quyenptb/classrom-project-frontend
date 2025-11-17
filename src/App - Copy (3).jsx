@@ -1,5 +1,5 @@
 // --- lop-hoc-frontend/src/App.jsx ---
-// (PHIÊN BẢN MỚI 4.0) - Fix MẤT CHAT/AUDIO khi ĐỔI TAB + Fix MÀN ĐEN PDF
+// (PHIÊN BẢN MỚI 3.9) - Fix MẤT CHAT + Fix MẤT AUDIO (Lần cuối!)
 // PHIÊN BẢN ĐẦY ĐỦ 100%
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -69,10 +69,8 @@ function AppStyles() {
       .tab-button:disabled { color: #9ca3af; cursor: not-allowed; }
 
 /* --- CSS CHO PDF VIEWER --- */
-      /* --- (FIX MÀN ĐEN PDF 1/2) Đổi nền ngoài thành trắng --- */
-      .pdf-viewer-container { flex: 1; display: flex; flex-direction: column; background-color: #FFFFFF; /* << FIX: Đổi sang Trắng */ border-radius: 0.5rem; box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06); border: 1px solid #e5e7eb; overflow: hidden; }
+      .pdf-viewer-container { flex: 1; display: flex; flex-direction: column; background-color: #52525B; /* zinc-600 */ border-radius: 0.5rem; box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06); border: 1px solid #e5e7eb; overflow: hidden; }
       
-      /* --- (FIX MÀN ĐEN PDF 2/2) Chuyển nền đen vào màn hình xem --- */
       .pdf-display { 
         flex: 1; 
         display: flex; 
@@ -81,7 +79,6 @@ function AppStyles() {
         overflow: auto; /* Cho phép cuộn nếu PDF quá to */
         padding: 1rem; 
         position: relative;
-        background-color: #52525B; /* << FIX: Chuyển nền đen vào đây */
       }
       
       /* Container cho 2 canvas chồng lên nhau */
@@ -166,7 +163,7 @@ function AppStyles() {
 
 /* --- CSS CÁC CÔNG CỤ (Tool, Quiz, YouTube) --- */
       .tool-container {
-        /* flex: 1; (FIX MẤT AUDIO) Xóa flex: 1 */
+        flex: 1;
         display: flex;
         flex-direction: column;
         min-height: 300px;
@@ -246,7 +243,6 @@ function AppStyles() {
       .audio-player { width: 100%; margin-top: 0.5rem; }
 
 /* --- CSS Chat --- */
-      /* --- (FIX MẤT AUDIO) Sửa lại cho flex 1 --- */
       .chat-box-container { flex: 1; display: flex; flex-direction: column; min-height: 300px; }
       .chat-box-title { font-size: 1.25rem; font-weight: 600; color: #1f2937; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin: 0 0 1rem 0; }
       .chat-messages { flex: 1; overflow-y: auto; margin-bottom: 1rem; padding-right: 0.5rem; display: flex; flex-direction: column; gap: 1rem; }
@@ -534,35 +530,28 @@ export default function App() {
               setIsSidebarExpanded={setIsSidebarExpanded}
             />
             
-            {/* --- (FIX MẤT AUDIO / MẤT CHAT) --- */}
-            {/* Thay vì dùng '&&', dùng 'display: none' để giữ component "sống" */}
-            <div style={{ display: sidebarTab === 'chat' ? 'flex' : 'none', flexDirection: 'column', flex: 1, minHeight: '300px' }}>
-              <ChatBox socket={socket} role={role} messages={messages} />
-            </div>
+            {/* --- (FIX 4/4) TRUYỀN MESSAGES XUỐNG --- */}
+            {sidebarTab === 'chat' && ( <ChatBox socket={socket} role={role} messages={messages} /> )}
             
-            <div style={{ display: sidebarTab === 'audio' ? 'block' : 'none' }}>
-              {role === 'teacher' ? ( 
-                <AudioStreamer socket={socket} /> 
-              ) : ( 
-                <AudioPlayer socket={socket} /> 
-              )}
-            </div>
+            {sidebarTab === 'audio' && (
+              role === 'teacher' ? ( <AudioStreamer socket={socket} /> ) : ( <AudioPlayer socket={socket} /> )
+            )}
             
-            <div style={{ display: sidebarTab === 'quiz' ? 'block' : 'none' }}>
+            {sidebarTab === 'quiz' && (
               <QuizTool 
                 socket={socket} 
                 role={role} 
                 currentQuiz={currentQuiz} 
               />
-            </div>
+            )}
             
-            <div style={{ display: sidebarTab === 'youtube' ? 'block' : 'none' }}>
+            {sidebarTab === 'youtube' && (
               <YouTubeTool 
                 socket={socket} 
                 role={role} 
                 currentYouTubeId={currentYouTubeId} 
               />
-            </div>
+            )}
 
           </aside>
         </div>
