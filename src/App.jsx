@@ -5,7 +5,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { io } from 'socket.io-client';
 
-const SERVER_URL = 'http://localhost:4000';
+const SERVER_URL = 'https://lophocquyenkhoa.onrender.com';
 
 // (FIX) Cập nhật link PDF.js (v3.11.174)
 const PDFJS_SCRIPT_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
